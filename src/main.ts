@@ -62,13 +62,15 @@ const environmentMapTexture: THREE.CubeTexture = cubeTextureLoader.load([
  */
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
+world.allowSleep = true;
+world.broadphase = new CANNON.SAPBroadphase(world);
 
 // Materials
 const defaultMaterial: CANNON.Material = new CANNON.Material("default");
 
 const defaultContactMaterial: CANNON.ContactMaterial = new CANNON.ContactMaterial(defaultMaterial, defaultMaterial, {
   friction: 0.1,
-  restitution: 0.9,
+  restitution: 0.6,
 });
 world.addContactMaterial(defaultContactMaterial);
 world.defaultContactMaterial = defaultContactMaterial;

@@ -1,6 +1,6 @@
 import "./style.css";
 
-import CANNON from "cannon";
+import * as CANNON from "cannon-es";
 import { GUI } from "lil-gui";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -56,7 +56,7 @@ const scene: THREE.Scene = new THREE.Scene();
  */
 const hitSound: HTMLAudioElement = new Audio("/sounds/hit.mp3");
 
-const playHitSound = (collision: CANNON.ICollisionEvent) => {
+const playHitSound = (collision: any) => {
   const impactStrength: number = collision.contact.getImpactVelocityAlongNormal();
   if (impactStrength > 1.5) {
     hitSound.volume = Math.random();

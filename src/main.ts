@@ -43,6 +43,19 @@ const canvas = document.getElementById("canvas") as HTMLCanvasElement;
 const scene: THREE.Scene = new THREE.Scene();
 
 /**
+ * Sounds
+ */
+const hitSound: HTMLAudioElement = new Audio("/sounds/hit.mp3");
+
+const playHitSound = (collision: CANNON.ICollisionEvent) => {
+  const impactStrength: number = collision.contact.getImpactVelocityAlongNormal();
+  if (impactStrength > 1.5) {
+    hitSound.volume = Math.random();
+    hitSound.currentTime = 0;
+    hitSound.play();
+  }
+};
+/**
  * Textures
  */
 const textureLoader: THREE.TextureLoader = new THREE.TextureLoader();
@@ -196,6 +209,7 @@ const createSphere = (radius: number, position: THREE.Vector3): void => {
     material: defaultMaterial,
   });
   body.position.copy(position as unknown as CANNON.Vec3);
+  body.addEventListener("collide", playHitSound);
   world.addBody(body);
 
   objectsToUpdate.push({ mesh, body });
@@ -216,6 +230,7 @@ const createBox = (width: number, height: number, depth: number, position: THREE
     material: defaultMaterial,
   });
   body.position.copy(position as unknown as CANNON.Vec3);
+  body.addEventListener("collide", playHitSound);
   world.addBody(body);
 
   objectsToUpdate.push({ mesh, body });

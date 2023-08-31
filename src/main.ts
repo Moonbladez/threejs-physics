@@ -29,9 +29,18 @@ const debugObject = {
       new THREE.Vector3((Math.random() - 0.5) * 3, 4, (Math.random() - 0.5) * 3)
     );
   },
+  reset: () => {
+    for (const object of objectsToUpdate) {
+      object.body.removeEventListener("collide", playHitSound);
+      scene.remove(object.mesh);
+    }
+
+    objectsToUpdate.splice(0, objectsToUpdate.length);
+  },
 };
-gui.add(debugObject, "createSphere");
-gui.add(debugObject, "createBox");
+gui.add(debugObject, "createSphere").name("Add sphere");
+gui.add(debugObject, "createBox").name("Add box");
+gui.add(debugObject, "reset").name("Reset");
 
 /**
  * Base

@@ -21,8 +21,17 @@ const debugObject = {
   createSphere: () => {
     createSphere(Math.random() * 0.5, new THREE.Vector3((Math.random() - 0.5) * 3, 4, (Math.random() - 0.5) * 3));
   },
+  createBox: () => {
+    createBox(
+      Math.random() * 0.5,
+      Math.random() * 0.5,
+      Math.random() * 0.5,
+      new THREE.Vector3((Math.random() - 0.5) * 3, 4, (Math.random() - 0.5) * 3)
+    );
+  },
 };
 gui.add(debugObject, "createSphere");
+gui.add(debugObject, "createBox");
 
 /**
  * Base
@@ -162,6 +171,14 @@ const sphereMaterial: THREE.MeshStandardMaterial = new THREE.MeshStandardMateria
   envMap: environmentMapTexture,
 });
 
+const boxGeometry: THREE.BoxGeometry = new THREE.BoxGeometry(1, 1, 1);
+const boxMaterial: THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial({
+  metalness: 1,
+  roughness: 1,
+
+  envMap: environmentMapTexture,
+});
+
 const createSphere = (radius: number, position: THREE.Vector3): void => {
   const mesh: THREE.Mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
   mesh.scale.set(radius, radius, radius);
@@ -172,6 +189,26 @@ const createSphere = (radius: number, position: THREE.Vector3): void => {
   const shape: CANNON.Sphere = new CANNON.Sphere(radius);
   const body: CANNON.Body = new CANNON.Body({
     mass: 1,
+    position: new CANNON.Vec3(position.x, position.y, position.z),
+    shape: shape,
+    material: defaultMaterial,
+  });
+  body.position.copy(position as unknown as CANNON.Vec3);
+  world.addBody(body);
+
+  objectsToUpdate.push({ mesh, body });
+};
+
+const createBox = (width: number, height: number, depth: number, position: THREE.Vector3): void => {
+  const mesh: THREE.Mesh = new THREE.Mesh(boxGeometry, boxMaterial);
+  mesh.scale.set(width, height, depth);
+  mesh.castShadow = true;
+  mesh.position.copy(position);
+  scene.add(mesh);
+
+  const shape: CANNON.Box = new CANNON.Box(new CANNON.Vec3(width * 0.5, height * 0.5, depth * 0.5));
+  const body: CANNON.Body = new CANNON.Body({
+    mass: 2,
     position: new CANNON.Vec3(position.x, position.y, position.z),
     shape: shape,
     material: defaultMaterial,

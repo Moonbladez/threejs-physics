@@ -5,6 +5,11 @@ import { GUI } from "lil-gui";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
+interface ObjectToUpdate {
+  mesh: THREE.Mesh;
+  body: CANNON.Body;
+}
+
 // Disable color management
 THREE.ColorManagement.enabled = false;
 
@@ -12,6 +17,12 @@ THREE.ColorManagement.enabled = false;
  * Debug
  */
 const gui: GUI = new GUI();
+const debugObject = {
+  createSphere: () => {
+    createSphere(Math.random() * 0.5, new THREE.Vector3((Math.random() - 0.5) * 3, 4, (Math.random() - 0.5) * 3));
+  },
+};
+gui.add(debugObject, "createSphere");
 
 /**
  * Base
@@ -53,17 +64,6 @@ const defaultContactMaterial: CANNON.ContactMaterial = new CANNON.ContactMateria
 world.addContactMaterial(defaultContactMaterial);
 world.defaultContactMaterial = defaultContactMaterial;
 
-// SPHERE
-const sphereShape: CANNON.Sphere = new CANNON.Sphere(0.5);
-const sphereBody: CANNON.Body = new CANNON.Body({
-  mass: 1,
-  position: new CANNON.Vec3(0, 3, 0),
-  shape: sphereShape,
-});
-sphereBody.applyLocalForce(new CANNON.Vec3(100, 0, 0), new CANNON.Vec3(0, 0, 0));
-
-world.addBody(sphereBody);
-
 // FLOOR
 const floorShape: CANNON.Plane = new CANNON.Plane();
 const floorBody: CANNON.Body = new CANNON.Body({
@@ -71,22 +71,6 @@ const floorBody: CANNON.Body = new CANNON.Body({
 });
 floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(-1, 0, 0), Math.PI * 0.5);
 world.addBody(floorBody);
-
-/**
- * Test sphere
- */
-const sphere: THREE.Mesh = new THREE.Mesh(
-  new THREE.SphereGeometry(0.5, 32, 32),
-  new THREE.MeshStandardMaterial({
-    metalness: 0.3,
-    roughness: 0.4,
-    envMap: environmentMapTexture,
-    envMapIntensity: 0.5,
-  })
-);
-sphere.castShadow = true;
-sphere.position.y = 0.5;
-scene.add(sphere);
 
 /**
  * Floor
@@ -168,6 +152,36 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
+// Utils
+const objectsToUpdate: ObjectToUpdate[] = [];
+
+const sphereGeometry: THREE.SphereGeometry = new THREE.SphereGeometry(1, 20, 20);
+const sphereMaterial: THREE.MeshStandardMaterial = new THREE.MeshStandardMaterial({
+  metalness: 0.3,
+  roughness: 0.4,
+  envMap: environmentMapTexture,
+});
+
+const createSphere = (radius: number, position: THREE.Vector3): void => {
+  const mesh: THREE.Mesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
+  mesh.scale.set(radius, radius, radius);
+  mesh.castShadow = true;
+  mesh.position.copy(position);
+  scene.add(mesh);
+
+  const shape: CANNON.Sphere = new CANNON.Sphere(radius);
+  const body: CANNON.Body = new CANNON.Body({
+    mass: 1,
+    position: new CANNON.Vec3(position.x, position.y, position.z),
+    shape: shape,
+    material: defaultMaterial,
+  });
+  body.position.copy(position as unknown as CANNON.Vec3);
+  world.addBody(body);
+
+  objectsToUpdate.push({ mesh, body });
+};
+
 /**
  * Animate
  */
@@ -179,13 +193,13 @@ const tick = () => {
   const deltaTime: number = elapsedTime - oldElapsedTime;
   oldElapsedTime = elapsedTime;
 
-  sphereBody.applyForce(new CANNON.Vec3(-0.3, 0, 0), sphereBody.position);
-
   // Update physics
   world.step(1 / 60, deltaTime, 3);
 
-  // Update sphere
-  sphere.position.copy(sphereBody.position as unknown as THREE.Vector3);
+  for (const object of objectsToUpdate) {
+    object.mesh.position.copy(object.body.position as unknown as THREE.Vector3);
+    object.mesh.quaternion.copy(object.body.quaternion as unknown as THREE.Quaternion);
+  }
 
   // Update controls
   controls.update();
